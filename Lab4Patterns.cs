@@ -10,7 +10,6 @@ namespace Lab4Patterns
             Console.OutputEncoding = System.Text.Encoding.UTF8;
 
             Console.WriteLine("ЛАБОРАТОРНАЯ РАБОТА №4: ПОВЕДЕНЧЕСКИЕ ПАТТЕРНЫ");
-            Console.WriteLine("============================================");
 
             // 1. STRATEGY
             Console.WriteLine("\n1. STRATEGY — выбор способа атаки");
