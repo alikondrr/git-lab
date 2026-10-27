@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
+//лаба 4
 namespace Lab4Patterns
 {
     public class Program
