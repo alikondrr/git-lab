@@ -1,26 +1,51 @@
 ﻿using System;
 
-//лаба 2
-namespace лаба_2
+namespace Lab2OOP
 {
     public abstract class GameObject
     {
         private static int _nextId = 1;
 
-        public int Id { get; }
-        public string Name { get; }
-        public int X { get; protected set; }
-        public int Y { get; protected set; }
+        private readonly int _id;
+        private readonly string _name;
+        private int _x;
+        private int _y;
 
         protected GameObject(string name, int x, int y)
         {
             if (string.IsNullOrWhiteSpace(name))
-                throw new ArgumentException("Имя не может быть пустым");
+                throw new ArgumentException("Имя не может быть пустым", nameof(name));
 
-            Id = _nextId++;
-            Name = name;
-            X = x;
-            Y = y;
+            _id = _nextId++;
+            _name = name;
+            _x = x;
+            _y = y;
+        }
+
+        public int GetId()
+        {
+            return _id;
+        }
+
+        public string GetName()
+        {
+            return _name;
+        }
+
+        public int GetX()
+        {
+            return _x;
+        }
+
+        public int GetY()
+        {
+            return _y;
+        }
+
+        protected void SetPosition(int x, int y)
+        {
+            _x = x;
+            _y = y;
         }
     }
 
@@ -36,50 +61,63 @@ namespace лаба_2
 
     public abstract class Unit : GameObject
     {
-        public float Hp { get; private set; }
+        private float _hp;
 
         protected Unit(string name, int x, int y, float hp)
             : base(name, x, y)
         {
             if (float.IsNaN(hp) || float.IsInfinity(hp) || hp < 0)
-                throw new ArgumentException("Здоровье должно быть неотрицательным");
+                throw new ArgumentOutOfRangeException(nameof(hp));
 
-            Hp = hp;
+            _hp = hp;
         }
 
-        public bool IsAlive() => Hp > 0;
+        public bool IsAlive()
+        {
+            return _hp > 0;
+        }
+
+        public float GetHp()
+        {
+            return _hp;
+        }
 
         public virtual void ReceiveDamage(float damage)
         {
             if (float.IsNaN(damage) || float.IsInfinity(damage) || damage < 0)
-                throw new ArgumentException("Урон должен быть неотрицательным");
+                throw new ArgumentOutOfRangeException(nameof(damage));
 
-            Hp = Math.Max(0, Hp - damage);
+            _hp = Math.Max(0f, _hp - damage);
         }
     }
 
     public abstract class Building : GameObject
     {
-        public bool Built { get; protected set; }
+        private readonly bool _built;
 
         protected Building(string name, int x, int y, bool built)
             : base(name, x, y)
         {
-            Built = built;
+            _built = built;
+        }
+
+        public bool IsBuilt()
+        {
+            return _built;
         }
     }
 
     public class Archer : Unit, IAttacker, IMoveable
     {
-        public float Damage { get; }
+        private readonly float _damage;
 
         public Archer(string name, int x, int y, float hp, float damage)
             : base(name, x, y, hp)
         {
             if (float.IsNaN(damage) || float.IsInfinity(damage) || damage < 0)
-                throw new ArgumentException("Урон должен быть неотрицательным");
+                throw new ArgumentOutOfRangeException(nameof(damage));
 
-            Damage = damage;
+            _damage = damage;
         }
 
         public void Attack(Unit unit)
@@ -89,49 +127,48 @@ namespace лаба_2
 
             if (!IsAlive())
             {
-                Console.WriteLine($"{Name} мёртв и не может атаковать.");
+                Console.WriteLine($"{GetName()} мёртв и не может атаковать.");
                 return;
             }
 
             if (!unit.IsAlive())
             {
-                Console.WriteLine($"{unit.Name} уже мёртв.");
+                Console.WriteLine($"{unit.GetName()} уже мёртв.");
                 return;
             }
 
             Console.WriteLine(
-                $"{Name} атакует {unit.Name} и наносит {Damage} урона.");
+                $"{GetName()} атакует {unit.GetName()} и наносит {_damage} урона.");
 
-            unit.ReceiveDamage(Damage);
+            unit.ReceiveDamage(_damage);
         }
 
         public void Move(int x, int y)
         {
             if (!IsAlive())
             {
-                Console.WriteLine($"{Name} мёртв и не может двигаться.");
+                Console.WriteLine($"{GetName()} мёртв и не может двигаться.");
                 return;
             }
 
             Console.WriteLine(
-                $"{Name} перемещается из ({X}, {Y}) в ({x}, {y}).");
+                $"{GetName()} перемещается из ({GetX()}, {GetY()}) в ({x}, {y}).");
 
-            X = x;
-            Y = y;
+            SetPosition(x, y);
         }
     }
 
     public class Fort : Building, IAttacker
     {
-        public float Damage { get; }
+        private readonly float _damage;
 
         public Fort(string name, int x, int y, bool built, float damage)
             : base(name, x, y, built)
         {
             if (float.IsNaN(damage) || float.IsInfinity(damage) || damage < 0)
-                throw new ArgumentException("Урон должен быть неотрицательным");
+                throw new ArgumentOutOfRangeException(nameof(damage));
 
-            Damage = damage;
+            _damage = damage;
         }
 
         public void Attack(Unit unit)
@@ -139,47 +176,44 @@ namespace лаба_2
             if (unit == null)
                 throw new ArgumentNullException(nameof(unit));
 
-            if (!Built)
+            if (!IsBuilt())
             {
-                Console.WriteLine(
-                    $"{Name} ещё не построена и не может атаковать.");
+                Console.WriteLine($"{GetName()} ещё не построена и не может атаковать.");
                 return;
             }
 
             if (!unit.IsAlive())
             {
-                Console.WriteLine($"{unit.Name} уже мёртв.");
+                Console.WriteLine($"{unit.GetName()} уже мёртв.");
                 return;
             }
 
             Console.WriteLine(
-                $"{Name} стреляет по {unit.Name} и наносит {Damage} урона.");
+                $"{GetName()} стреляет по {unit.GetName()} и наносит {_damage} урона.");
 
-            unit.ReceiveDamage(Damage);
+            unit.ReceiveDamage(_damage);
         }
     }
 
-    public class MobileHouse : Building, IMoveable
+    public class MobileHome : Building, IMoveable
     {
-        public MobileHouse(string name, int x, int y, bool built)
+        public MobileHome(string name, int x, int y, bool built)
             : base(name, x, y, built)
         {
         }
 
         public void Move(int x, int y)
         {
-            if (!Built)
+            if (!IsBuilt())
             {
-                Console.WriteLine(
-                    $"{Name} ещё не построен и не может двигаться.");
+                Console.WriteLine($"{GetName()} ещё не построен и не может двигаться.");
                 return;
             }
 
             Console.WriteLine(
-                $"{Name} едет из ({X}, {Y}) в ({x}, {y}).");
+                $"{GetName()} едет из ({GetX()}, {GetY()}) в ({x}, {y}).");
 
-            X = x;
-            Y = y;
+            SetPosition(x, y);
         }
     }
 
@@ -190,19 +224,18 @@ namespace лаба_2
             Archer archer = new Archer("Лучник", 0, 0, 100, 15);
             Archer enemy = new Archer("Вражеский лучник", 5, 5, 80, 10);
             Fort fort = new Fort("Крепость", 10, 10, true, 40);
-            MobileHouse house = new MobileHouse(
-                "Дом на колёсах", 2, 2, true);
+            MobileHome house = new MobileHome("Дом на колёсах", 2, 2, true);
 
             Console.WriteLine("=== Игровые объекты ===");
 
             Console.WriteLine(
-                $"{archer.Name} | id={archer.Id} | hp={archer.Hp} | ({archer.X}, {archer.Y})");
+                $"{archer.GetName()} | id={archer.GetId()} | hp={archer.GetHp()} | ({archer.GetX()}, {archer.GetY()})");
 
             Console.WriteLine(
-                $"{fort.Name} | id={fort.Id} | built={fort.Built} | ({fort.X}, {fort.Y})");
+                $"{fort.GetName()} | id={fort.GetId()} | built={fort.IsBuilt()} | ({fort.GetX()}, {fort.GetY()})");
 
             Console.WriteLine(
-                $"{house.Name} | id={house.Id} | built={house.Built} | ({house.X}, {house.Y})");
+                $"{house.GetName()} | id={house.GetId()} | built={house.IsBuilt()} | ({house.GetX()}, {house.GetY()})");
 
             Console.WriteLine("\n=== Перемещение ===");
 
@@ -215,7 +248,7 @@ namespace лаба_2
             fort.Attack(enemy);
 
             Console.WriteLine(
-                $"\nПосле атак: {enemy.Name} | hp={enemy.Hp} | alive={enemy.IsAlive()}");
+                $"\nПосле атак: {enemy.GetName()} | hp={enemy.GetHp()} | alive={enemy.IsAlive()}");
 
             Console.WriteLine("\n=== Полиморфизм ===");
 
@@ -227,7 +260,7 @@ namespace лаба_2
             }
 
             Console.WriteLine(
-                $"\nПосле повторных атак: {enemy.Name} | hp={enemy.Hp} | alive={enemy.IsAlive()}");
+                $"\nПосле повторных атак: {enemy.GetName()} | hp={enemy.GetHp()} | alive={enemy.IsAlive()}");
         }
     }
 }
