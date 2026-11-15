@@ -1,164 +1,178 @@
 ﻿using System;
 
-namespace Lab5Patterns
+namespace lab5
 {
+
+    // прокси
+    public interface IChest
+    {
+        void Open();
+    }
+
+    public class Chest : IChest
+    {
+        public void Open()
+        {
+            Console.WriteLine("Сундук открыт. Получено золото");
+        }
+    }
+
+    public class ChestProxy : IChest
+    {
+        private Chest _chest;
+        private bool _hasKey;
+
+        public ChestProxy(bool hasKey)
+        {
+            _hasKey = hasKey;
+        }
+
+        public void Open()
+        {
+            if (!_hasKey)
+            {
+                Console.WriteLine("Нужен ключ");
+                return;
+            }
+
+            if (_chest == null)
+            {
+                _chest = new Chest();
+            }
+
+            _chest.Open();
+        }
+    }
+
+
+    // адаптер
+    public interface IGameSound
+    {
+        void PlaySound(string name);
+    }
+
+    public class OldSoundSystem
+    {
+        public void StartAudio(string file)
+        {
+            Console.WriteLine("Звук: " + file);
+        }
+    }
+
+    public class SoundAdapter : IGameSound
+    {
+        private OldSoundSystem _sound;
+
+        public SoundAdapter(OldSoundSystem sound)
+        {
+            _sound = sound;
+        }
+
+        public void PlaySound(string name)
+        {
+            _sound.StartAudio(name);
+        }
+    }
+
+
+    // мост
+    public interface IDamageType
+    {
+        void DealDamage(int damage);
+    }
+
+    public class PhysicalDamage : IDamageType
+    {
+        public void DealDamage(int damage)
+        {
+            Console.WriteLine("Физический урон: " + damage);
+        }
+    }
+
+    public class MagicDamage : IDamageType
+    {
+        public void DealDamage(int damage)
+        {
+            Console.WriteLine("Магический урон: " + damage);
+        }
+    }
+
+    public abstract class Weapon
+    {
+        protected IDamageType _damageType;
+
+        public Weapon(IDamageType damageType)
+        {
+            _damageType = damageType;
+        }
+
+        public abstract void Attack();
+    }
+
+    public class Sword : Weapon
+    {
+        public Sword(IDamageType damageType) : base(damageType)
+        {
+        }
+
+        public override void Attack()
+        {
+            Console.WriteLine("Удар мечом");
+            _damageType.DealDamage(20);
+        }
+    }
+
+    public class Bow : Weapon
+    {
+        public Bow(IDamageType damageType) : base(damageType)
+        {
+        }
+
+        public override void Attack()
+        {
+            Console.WriteLine("Выстрел из лука");
+            _damageType.DealDamage(15);
+        }
+    }
+
+
     public class Program
     {
+
         public static void Main()
         {
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-            Console.WriteLine("ЛАБОРАТОРНАЯ РАБОТА №5: СТРУКТУРНЫЕ ПАТТЕРНЫ");
+            // прокси
+            IChest chest1 = new ChestProxy(false);
+            IChest chest2 = new ChestProxy(true);
 
-            // 1. PROXY
-            Console.WriteLine("\n1. PROXY — доступ к игровому складу");
+            chest1.Open();
+            chest2.Open();
 
-            IStorage playerStorage = new StorageProxy(false);
-            IStorage adminStorage = new StorageProxy(true);
 
-            playerStorage.ShowResources();
-            adminStorage.ShowResources();
+            // адаптер
+            OldSoundSystem oldSound = new OldSoundSystem();
+            IGameSound sound = new SoundAdapter(oldSound);
 
-            // 2. ADAPTER
-            Console.WriteLine("\n2. ADAPTER — подключение внешнего логгера");
+            sound.PlaySound("battle.mp3");
 
-            ExternalLogger externalLogger = new ExternalLogger();
-            ILogger logger = new LoggerAdapter(externalLogger);
-            logger.Log("Игрок вошёл в игру");
 
-            // 3. BRIDGE
-            Console.WriteLine("\n3. BRIDGE — вывод сообщений на разные устройства");
+            // мост
+            IDamageType physical = new PhysicalDamage();
+            IDamageType magic = new MagicDamage();
 
-            IDevice screen = new ScreenDevice();
-            IDevice file = new FileDevice();
+            Weapon sword = new Sword(physical);
+            Weapon magicSword = new Sword(magic);
+            Weapon bow = new Bow(physical);
 
-            Message normalScreenMessage = new NormalMessage(screen);
-            Message urgentScreenMessage = new UrgentMessage(screen);
-            Message normalFileMessage = new NormalMessage(file);
 
-            normalScreenMessage.Show("Добро пожаловать в игру");
-            urgentScreenMessage.Show("Внимание! База атакована!");
-            normalFileMessage.Show("Сохранение игры выполнено");
-        }
-    }
-
-    //  PROXY 
-    public interface IStorage
-    {
-        void ShowResources();
-    }
-
-    public class RealStorage : IStorage
-    {
-        public void ShowResources()
-        {
-            Console.WriteLine("Ресурсы склада: золото, дерево, камень.");
-        }
-    }
-
-    public class StorageProxy : IStorage
-    {
-        private RealStorage _realStorage = new RealStorage();
-        private bool _hasAccess;
-
-        public StorageProxy(bool hasAccess)
-        {
-            _hasAccess = hasAccess;
+            sword.Attack();
+            magicSword.Attack();
+            bow.Attack();
         }
 
-        public void ShowResources()
-        {
-            if (_hasAccess)
-            {
-                _realStorage.ShowResources();
-            }
-            else
-            {
-                Console.WriteLine("Доступ к складу запрещён.");
-            }
-        }
     }
 
-    //  ADAPTER 
-    public class ExternalLogger
-    {
-        public void WriteLog(string text)
-        {
-            Console.WriteLine("Внешний логгер: " + text);
-        }
-    }
 
-    public interface ILogger
-    {
-        void Log(string message);
-    }
-
-    public class LoggerAdapter : ILogger
-    {
-        private ExternalLogger _externalLogger;
-
-        public LoggerAdapter(ExternalLogger externalLogger)
-        {
-            _externalLogger = externalLogger;
-        }
-
-        public void Log(string message)
-        {
-            _externalLogger.WriteLog(message);
-        }
-    }
-
-    //  BRIDGE 
-    public interface IDevice
-    {
-        void Print(string text);
-    }
-
-    public class ScreenDevice : IDevice
-    {
-        public void Print(string text)
-        {
-            Console.WriteLine("Экран: " + text);
-        }
-    }
-
-    public class FileDevice : IDevice
-    {
-        public void Print(string text)
-        {
-            Console.WriteLine("Файл: " + text);
-        }
-    }
-
-    public abstract class Message
-    {
-        protected IDevice device;
-
-        public Message(IDevice device)
-        {
-            this.device = device;
-        }
-
-        public abstract void Show(string text);
-    }
-
-    public class NormalMessage : Message
-    {
-        public NormalMessage(IDevice device) : base(device) { }
-
-        public override void Show(string text)
-        {
-            device.Print("Обычное сообщение: " + text);
-        }
-    }
-
-    public class UrgentMessage : Message
-    {
-        public UrgentMessage(IDevice device) : base(device) { }
-
-        public override void Show(string text)
-        {
-            device.Print("СРОЧНО: " + text);
-        }
-    }
 }
+

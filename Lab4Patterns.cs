@@ -1,76 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 
-//лаба 4
-namespace Lab4Patterns
+namespace lab4
 {
-    public class Program
-    {
-        public static void Main()
-        {
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
-
-            Console.WriteLine("ЛАБОРАТОРНАЯ РАБОТА №4: ПОВЕДЕНЧЕСКИЕ ПАТТЕРНЫ");
-
-            // 1. STRATEGY
-            Console.WriteLine("\n1. STRATEGY — выбор способа атаки");
-            Hero hero = new Hero();
-
-            hero.SetAttackStrategy(new SwordAttack());
-            hero.Attack();
-
-            hero.SetAttackStrategy(new BowAttack());
-            hero.Attack();
-
-            hero.SetAttackStrategy(new MagicAttack());
-            hero.Attack();
-
-            // 2. CHAIN OF RESPONSIBILITY
-            Console.WriteLine("\n2. CHAIN OF RESPONSIBILITY — проверка игрока");
-
-            PlayerCheck nameCheck = new NameCheck();
-            PlayerCheck levelCheck = new LevelCheck();
-            PlayerCheck goldCheck = new GoldCheck();
-
-            nameCheck.SetNext(levelCheck);
-            levelCheck.SetNext(goldCheck);
-
-            Player player1 = new Player("Алина", 5, 100);
-            Player player2 = new Player("", 5, 100);
-            Player player3 = new Player("Макс", 0, 100);
-            Player player4 = new Player("Олег", 3, -10);
-
-            Console.WriteLine("\nПроверка player1:");
-            nameCheck.Handle(player1);
-
-            Console.WriteLine("\nПроверка player2:");
-            nameCheck.Handle(player2);
-
-            Console.WriteLine("\nПроверка player3:");
-            nameCheck.Handle(player3);
-
-            Console.WriteLine("\nПроверка player4:");
-            nameCheck.Handle(player4);
-
-            // 3. ITERATOR
-            Console.WriteLine("\n3. ITERATOR — перебор инвентаря");
-
-            Inventory inventory = new Inventory();
-            inventory.AddItem("Меч");
-            inventory.AddItem("Щит");
-            inventory.AddItem("Зелье");
-            inventory.AddItem("Лук");
-
-            IMyIterator iterator = inventory.CreateIterator();
-
-            while (iterator.HasNext())
-            {
-                Console.WriteLine("Предмет: " + iterator.Next());
-            }
-        }
-    }
-
-    // STRATEGY 
+    // стратегия
     public interface IAttackStrategy
     {
         void Attack();
@@ -80,7 +13,7 @@ namespace Lab4Patterns
     {
         public void Attack()
         {
-            Console.WriteLine("Герой атакует мечом.");
+            Console.WriteLine("Атака мечом");
         }
     }
 
@@ -88,140 +21,123 @@ namespace Lab4Patterns
     {
         public void Attack()
         {
-            Console.WriteLine("Герой стреляет из лука.");
+            Console.WriteLine("Атака из лука");
         }
     }
 
-    public class MagicAttack : IAttackStrategy
-    {
-        public void Attack()
-        {
-            Console.WriteLine("Герой использует магию.");
-        }
-    }
-
-    public class Hero
-    {
-        private IAttackStrategy _attackStrategy;
-
-        public void SetAttackStrategy(IAttackStrategy attackStrategy)
-        {
-            _attackStrategy = attackStrategy;
-        }
-
-        public void Attack()
-        {
-            if (_attackStrategy == null)
-            {
-                Console.WriteLine("Стратегия атаки не выбрана.");
-                return;
-            }
-            _attackStrategy.Attack();
-        }
-    }
-
-    // CHAIN OF RESPONSIBILITY 
     public class Player
     {
-        public string Name { get; set; }
-        public int Level { get; set; }
-        public int Gold { get; set; }
+        private IAttackStrategy _strategy;
 
-        public Player(string name, int level, int gold)
+        public Player(IAttackStrategy strategy)
         {
-            Name = name;
-            Level = level;
-            Gold = gold;
+            _strategy = strategy;
+        }
+
+        public void SetStrategy(IAttackStrategy strategy)
+        {
+            _strategy = strategy;
+        }
+
+        public void Attack()
+        {
+            _strategy.Attack();
         }
     }
 
-    public abstract class PlayerCheck
-    {
-        protected PlayerCheck Next;
 
-        public void SetNext(PlayerCheck next)
+    // цепочка обязанностей
+    public abstract class EventHandler
+    {
+        protected EventHandler _next;
+
+        public void SetNext(EventHandler next)
         {
-            Next = next;
+            _next = next;
         }
 
-        public abstract void Handle(Player player);
+        public abstract void Handle(string eventType);
     }
 
-    public class NameCheck : PlayerCheck
+    public class BattleHandler : EventHandler
     {
-        public override void Handle(Player player)
+        public override void Handle(string eventType)
         {
-            if (string.IsNullOrWhiteSpace(player.Name))
+            if (eventType == "battle")
             {
-                Console.WriteLine("Ошибка: имя игрока не заполнено.");
-                return;
+                Console.WriteLine("Начался бой");
             }
-
-            Console.WriteLine("Проверка имени пройдена.");
-            if (Next != null)
-                Next.Handle(player);
-        }
-    }
-
-    public class LevelCheck : PlayerCheck
-    {
-        public override void Handle(Player player)
-        {
-            if (player.Level <= 0)
+            else if (_next != null)
             {
-                Console.WriteLine("Ошибка: уровень игрока должен быть больше 0.");
-                return;
+                _next.Handle(eventType);
             }
-
-            Console.WriteLine("Проверка уровня пройдена.");
-            if (Next != null)
-                Next.Handle(player);
         }
     }
 
-    public class GoldCheck : PlayerCheck
+    public class TradeHandler : EventHandler
     {
-        public override void Handle(Player player)
+        public override void Handle(string eventType)
         {
-            if (player.Gold < 0)
+            if (eventType == "trade")
             {
-                Console.WriteLine("Ошибка: количество золота не может быть отрицательным.");
-                return;
+                Console.WriteLine("Открыта торговля");
             }
-
-            Console.WriteLine("Проверка золота пройдена.");
-            Console.WriteLine("Игрок успешно прошёл все проверки.");
+            else if (_next != null)
+            {
+                _next.Handle(eventType);
+            }
         }
     }
 
-    // ITERATOR 
-    public interface IMyIterator
+    public class QuestHandler : EventHandler
+    {
+        public override void Handle(string eventType)
+        {
+            if (eventType == "quest")
+            {
+                Console.WriteLine("Получено новое задание");
+            }
+            else if (_next != null)
+            {
+                _next.Handle(eventType);
+            }
+        }
+    }
+
+
+    // итератор
+    public interface IGameIterator
     {
         bool HasNext();
         string Next();
     }
 
-    public class InventoryIterator : IMyIterator
+    public class InventoryIterator : IGameIterator
     {
         private List<string> _items;
-        private int _position = 0;
+        private int _pos;
 
         public InventoryIterator(List<string> items)
         {
             _items = items;
+            _pos = 0;
         }
 
         public bool HasNext()
         {
-            return _position < _items.Count;
+            return _pos < _items.Count;
         }
 
         public string Next()
         {
             if (!HasNext())
-                throw new IndexOutOfRangeException();
+            {
+                throw new InvalidOperationException("Предметы закончились");
+            }
 
-            return _items[_position++];
+            string item = _items[_pos];
+            _pos++;
+            return item;
         }
     }
 
@@ -234,9 +150,54 @@ namespace Lab4Patterns
             _items.Add(item);
         }
 
-        public IMyIterator CreateIterator()
+        public IGameIterator CreateIterator()
         {
             return new InventoryIterator(_items);
         }
     }
+
+    public class Program
+    {
+        public static void Main()
+        {
+
+            // стратегия
+            Player player1 = new Player(new SwordAttack());
+            player1.Attack();
+
+            player1.SetStrategy(new BowAttack());
+            player1.Attack();
+
+
+            // цепочка обязанностей
+            EventHandler battle = new BattleHandler();
+            EventHandler trade = new TradeHandler();
+            EventHandler quest = new QuestHandler();
+
+            battle.SetNext(trade);
+            trade.SetNext(quest);
+
+            battle.Handle("battle");
+            battle.Handle("trade");
+            battle.Handle("quest");
+
+
+            // итератор
+            Inventory bag = new Inventory();
+
+            bag.AddItem("Меч");
+            bag.AddItem("Зелье");
+            bag.AddItem("Ключ");
+
+            IGameIterator iter = bag.CreateIterator();
+
+            while (iter.HasNext())
+            {
+                Console.WriteLine(iter.Next());
+            }
+        }
+
+    }
+
+
 }
